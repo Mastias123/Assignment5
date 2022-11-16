@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "https://github.com/Mastias123/Assignment5.git";
+
+// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative grpc/proto.proto
+
+message request {
+    string msg = 1;
+}
+
+message reply {
+    string msg = 1;
+}
+
+service register {
+    rpc joinServer (request) returns (stream reply) {}
+}
