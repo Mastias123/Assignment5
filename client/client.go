@@ -2,41 +2,119 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"flag"
+	"log"
 	"os"
 	"strconv"
 
 	proto "github.com/Mastias123/Assignment5.git/grpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type client struct {
 	proto.UnimplementedRegisterServer
-	id        int32
-	servers   map[int32]proto.RegisterServer
-	timestamp int32
+	id          int
+	servers     map[int32]proto.RegisterServer
+	timestamp   int32
+	portNumber  int
+	serverPort1 int
+	serverPort2 int
+	serverPort3 int
 }
+
+var (
+	clientPort        = flag.Int("cPort", 0, "client port number")
+	serverPort1       = flag.Int("sPort1", 0, "server port number (should match port used for the server)")
+	serverPort2       = flag.Int("sPort2", 0, "server port number (should match port used for the server)")
+	serverPort3       = flag.Int("sPort3", 0, "server port number (should match port used for the server)")
+	clientId          = flag.Int("cId", 0, "client id number")
+	serverStream, err proto.RegisterServer
+)
+
+//go run server/server.go -port 5001
+//go run client/client.go -cPort 8080 -sPort1 5001 -cId x
+//go run client/client.go -cPort 8080 -sPort1 5001 -sPort2 5002 -sPort3 5003 -cId 55
 
 func main() {
-	arg1, _ := strconv.ParseInt(os.Args[1], 10, 32) //Could also use flags
-	ownPort := int32(arg1) + 5000
+	flag.Parse() // Parse the flags to get the port for the client
 
 	cl := &client{
-		id:        ownPort,
-		servers:   make(map[int32]proto.RegisterServer),
-		timestamp: 0,
+		id:          *clientId,
+		servers:     make(map[int32]proto.RegisterServer),
+		timestamp:   0,
+		portNumber:  *clientPort,
+		serverPort1: *serverPort1,
+		serverPort2: *serverPort2,
+		serverPort3: *serverPort3,
 	}
 
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		if scanner.Text() == "bid" {
+	go registerToServer(cl, *serverPort1)
+	go registerToServer(cl, *serverPort2)
+	go registerToServer(cl, *serverPort3)
+	for {
 
-			//strconv.ParseInt(scanner.Text()
-			go cl.bid()
-		}
 	}
-
 }
 
-// amount int32)
-func (c *client) bid() {
+func registerToServer(client *client, serverPort int) {
+	//Connect to a server
 
+	serverConnection, _ := connectToServer(serverPort) // This is grpc logic that connects the client to a server
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	serverStream, err := serverConnection.JoinServer(context.Background(), &proto.Request{
+		Id:   int32(client.id),
+		Port: int32(client.portNumber),
+	})
+
+	if err != nil {
+		log.Printf(err.Error())
+	} else {
+		m, e := serverStream.Recv()
+
+		if e != nil {
+			log.Printf("Error %s \n", err.Error())
+			return
+		}
+
+		log.SetFlags(0)
+		log.Printf("%d Connected to Server", m.Id)
+	}
+
+	go listenOnServer(serverStream, client)
+
+	for scanner.Scan() {
+		//intput : scanner.Text()
+
+	}
+}
+
+// This is grpc logic that connects the client to the server
+func connectToServer(serverPort int) (proto.RegisterClient, error) {
+	conn, err := grpc.Dial("localhost:"+strconv.Itoa(serverPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("could not connect to port %v", serverPort)
+	} else {
+		log.Printf("Connected at port %d\n", serverPort)
+	}
+	return proto.NewRegisterClient(conn), nil
+}
+
+func listenOnServer(serverStream proto.Register_JoinServerClient, client *client) {
+	for {
+		resp, err := serverStream.Recv()
+
+		if err != nil {
+			log.Printf("Error %s", err)
+		}
+		if resp.Msg == "" {
+			log.Printf("%d Connected to Server", resp.Id)
+
+		} else {
+			log.Printf("Message from %d: %s", resp.Id, resp.Msg)
+		}
+	}
 }

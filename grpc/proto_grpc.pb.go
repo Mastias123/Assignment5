@@ -7,7 +7,10 @@
 package Assignment5_git
 
 import (
+	context "context"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RegisterClient interface {
+	JoinServer(ctx context.Context, in *Request, opts ...grpc.CallOption) (Register_JoinServerClient, error)
 }
 
 type registerClient struct {
@@ -29,10 +33,43 @@ func NewRegisterClient(cc grpc.ClientConnInterface) RegisterClient {
 	return &registerClient{cc}
 }
 
+func (c *registerClient) JoinServer(ctx context.Context, in *Request, opts ...grpc.CallOption) (Register_JoinServerClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Register_ServiceDesc.Streams[0], "/proto.register/joinServer", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &registerJoinServerClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Register_JoinServerClient interface {
+	Recv() (*Reply, error)
+	grpc.ClientStream
+}
+
+type registerJoinServerClient struct {
+	grpc.ClientStream
+}
+
+func (x *registerJoinServerClient) Recv() (*Reply, error) {
+	m := new(Reply)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // RegisterServer is the server API for Register service.
 // All implementations must embed UnimplementedRegisterServer
 // for forward compatibility
 type RegisterServer interface {
+	JoinServer(*Request, Register_JoinServerServer) error
 	mustEmbedUnimplementedRegisterServer()
 }
 
@@ -40,6 +77,9 @@ type RegisterServer interface {
 type UnimplementedRegisterServer struct {
 }
 
+func (UnimplementedRegisterServer) JoinServer(*Request, Register_JoinServerServer) error {
+	return status.Errorf(codes.Unimplemented, "method JoinServer not implemented")
+}
 func (UnimplementedRegisterServer) mustEmbedUnimplementedRegisterServer() {}
 
 // UnsafeRegisterServer may be embedded to opt out of forward compatibility for this service.
@@ -53,6 +93,27 @@ func RegisterRegisterServer(s grpc.ServiceRegistrar, srv RegisterServer) {
 	s.RegisterService(&Register_ServiceDesc, srv)
 }
 
+func _Register_JoinServer_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Request)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RegisterServer).JoinServer(m, &registerJoinServerServer{stream})
+}
+
+type Register_JoinServerServer interface {
+	Send(*Reply) error
+	grpc.ServerStream
+}
+
+type registerJoinServerServer struct {
+	grpc.ServerStream
+}
+
+func (x *registerJoinServerServer) Send(m *Reply) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // Register_ServiceDesc is the grpc.ServiceDesc for Register service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -60,6 +121,12 @@ var Register_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.register",
 	HandlerType: (*RegisterServer)(nil),
 	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "grpc/proto.proto",
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "joinServer",
+			Handler:       _Register_JoinServer_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "grpc/proto.proto",
 }
