@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RegisterClient interface {
 	JoinServer(ctx context.Context, in *Request, opts ...grpc.CallOption) (Register_JoinServerClient, error)
+	Auction(ctx context.Context, in *Bid, opts ...grpc.CallOption) (*Result, error)
 }
 
 type registerClient struct {
@@ -65,11 +66,21 @@ func (x *registerJoinServerClient) Recv() (*Reply, error) {
 	return m, nil
 }
 
+func (c *registerClient) Auction(ctx context.Context, in *Bid, opts ...grpc.CallOption) (*Result, error) {
+	out := new(Result)
+	err := c.cc.Invoke(ctx, "/proto.register/auction", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RegisterServer is the server API for Register service.
 // All implementations must embed UnimplementedRegisterServer
 // for forward compatibility
 type RegisterServer interface {
 	JoinServer(*Request, Register_JoinServerServer) error
+	Auction(context.Context, *Bid) (*Result, error)
 	mustEmbedUnimplementedRegisterServer()
 }
 
@@ -79,6 +90,9 @@ type UnimplementedRegisterServer struct {
 
 func (UnimplementedRegisterServer) JoinServer(*Request, Register_JoinServerServer) error {
 	return status.Errorf(codes.Unimplemented, "method JoinServer not implemented")
+}
+func (UnimplementedRegisterServer) Auction(context.Context, *Bid) (*Result, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Auction not implemented")
 }
 func (UnimplementedRegisterServer) mustEmbedUnimplementedRegisterServer() {}
 
@@ -114,13 +128,36 @@ func (x *registerJoinServerServer) Send(m *Reply) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _Register_Auction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Bid)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RegisterServer).Auction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.register/auction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RegisterServer).Auction(ctx, req.(*Bid))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Register_ServiceDesc is the grpc.ServiceDesc for Register service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Register_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.register",
 	HandlerType: (*RegisterServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "auction",
+			Handler:    _Register_Auction_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "joinServer",

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -18,6 +19,12 @@ type Server struct {
 	clients   map[int32]proto.RegisterClient
 	timestamp int32
 	port      int
+	maxBid    int
+}
+type Client struct {
+	clientId   int32
+	clientPort int32
+	stream     proto.Register_JoinServerServer
 }
 
 func main() {
@@ -26,6 +33,7 @@ func main() {
 		id:        1,
 		timestamp: 0,
 		port:      5001,
+		maxBid:    0,
 	}
 	server2 := &Server{
 		id:        2,
@@ -80,8 +88,20 @@ func startServer(server *Server) {
 // The join server function is named after the grpc function, and when you run the proto command the proto file will create a function signature that has to be implemented
 func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerServer) error {
 	log.Printf("ID %d Connected to server id %d", rq.Id, s.id)
+	var channel = make(chan bool, 1)
+	cl := Client{int32(rq.Id), int32(rq.Port), rjss}
+	cl.stream.Send(&proto.Reply{Id: cl.clientId, Msg: ""})
 
-	for {
-	}
+	<-channel //makes sure that join server isn't exited
 	return nil
+}
+
+// Auction(context.Context, *Bid) (*Result, error)
+
+func (s *Server) Auction(con context.Context, b *proto.Bid) (*proto.Result, error) {
+	log.Printf("Amount: %d", b.Amount)
+	log.Printf("Bid succes: %s", b.Comment)
+	s.maxBid += int(b.Amount)
+	log.Printf("max bid: %d", s.maxBid)
+	return &proto.Result{Comment: "outcome: "}, nil
 }

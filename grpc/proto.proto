@@ -16,6 +16,16 @@ message reply {
     string msg = 2;
 }
 
+message bid {
+    int32 amount = 1;
+    string comment = 2;
+}
+
+message result {
+    string comment = 1;
+}
+
 service register {
     rpc joinServer (request) returns (stream reply) {}
+    rpc auction (bid) returns (result){}
 }

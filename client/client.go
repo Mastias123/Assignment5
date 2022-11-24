@@ -22,6 +22,8 @@ type client struct {
 	serverPort1 int
 	serverPort2 int
 	serverPort3 int
+	amount      int
+
 }
 
 var (
@@ -33,8 +35,7 @@ var (
 	serverStream, err proto.RegisterServer
 )
 
-//go run server/server.go -port 5001
-//go run client/client.go -cPort 8080 -sPort1 5001 -cId x
+//go run server/server.go
 //go run client/client.go -cPort 8080 -sPort1 5001 -sPort2 5002 -sPort3 5003 -cId 55
 
 func main() {
@@ -48,22 +49,23 @@ func main() {
 		serverPort1: *serverPort1,
 		serverPort2: *serverPort2,
 		serverPort3: *serverPort3,
+		amount:      50,
 	}
 
-	go registerToServer(cl, *serverPort1)
-	go registerToServer(cl, *serverPort2)
-	go registerToServer(cl, *serverPort3)
+	// Wait for input in the client terminal
+	scanner := bufio.NewScanner(os.Stdin)
+	//, *scanner
+	go registerToServer(cl, *serverPort1, *scanner)
+	go registerToServer(cl, *serverPort2, *scanner)
+	go registerToServer(cl, *serverPort3, *scanner)
 	for {
 
 	}
 }
-
-func registerToServer(client *client, serverPort int) {
+//, scanner bufio.Scanner
+func registerToServer(client *client, serverPort int, scanner bufio.Scanner) {
 	//Connect to a server
-
 	serverConnection, _ := connectToServer(serverPort) // This is grpc logic that connects the client to a server
-
-	scanner := bufio.NewScanner(os.Stdin)
 
 	serverStream, err := serverConnection.JoinServer(context.Background(), &proto.Request{
 		Id:   int32(client.id),
@@ -74,12 +76,10 @@ func registerToServer(client *client, serverPort int) {
 		log.Printf(err.Error())
 	} else {
 		m, e := serverStream.Recv()
-
 		if e != nil {
 			log.Printf("Error %s \n", err.Error())
 			return
 		}
-
 		log.SetFlags(0)
 		log.Printf("%d Connected to Server", m.Id)
 	}
@@ -87,7 +87,16 @@ func registerToServer(client *client, serverPort int) {
 	go listenOnServer(serverStream, client)
 
 	for scanner.Scan() {
-		//intput : scanner.Text()
+		input := scanner.Text()
+		client.timestamp += 1
+		log.Printf("my message: %s", input)
+
+		if input == "bid" {
+			serverConnection.Auction(context.Background(), &proto.Bid{
+				Amount:  50,
+				Comment: "Succes",
+			})
+		}
 
 	}
 }
