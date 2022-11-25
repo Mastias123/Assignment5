@@ -23,7 +23,6 @@ type client struct {
 	serverPort2 int
 	serverPort3 int
 	amount      int
-
 }
 
 var (
@@ -54,15 +53,14 @@ func main() {
 
 	// Wait for input in the client terminal
 	scanner := bufio.NewScanner(os.Stdin)
-	//, *scanner
+	//Tror sagtens at man kunne tilføje en række channels som go routinerne tager som argument. 
 	go registerToServer(cl, *serverPort1, *scanner)
 	go registerToServer(cl, *serverPort2, *scanner)
 	go registerToServer(cl, *serverPort3, *scanner)
-	for {
-
-	}
+	for {}
 }
-//, scanner bufio.Scanner
+
+// , scanner bufio.Scanner
 func registerToServer(client *client, serverPort int, scanner bufio.Scanner) {
 	//Connect to a server
 	serverConnection, _ := connectToServer(serverPort) // This is grpc logic that connects the client to a server
@@ -89,7 +87,7 @@ func registerToServer(client *client, serverPort int, scanner bufio.Scanner) {
 	for scanner.Scan() {
 		input := scanner.Text()
 		client.timestamp += 1
-		log.Printf("my message: %s", input)
+		//log.Printf("my message: %s", input)
 
 		if input == "bid" {
 			serverConnection.Auction(context.Background(), &proto.Bid{
