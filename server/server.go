@@ -99,10 +99,11 @@ func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerSer
 // Auction(context.Context, *Bid) (*Result, error)
 
 func (s *Server) Auction(con context.Context, b *proto.Bid) (*proto.Result, error) {
-	log.Printf("Server -%d- resived bid from", s.id)
+	log.Printf("Resieved bid from clientId:%s", b.Id)
 	log.Printf("Amount: %d", b.Amount)
 	log.Printf("Bid succes: %s", b.Comment)
 	s.maxBid += int(b.Amount)
 	log.Printf("max bid: %d", s.maxBid)
+	log.Printf("------------")
 	return &proto.Result{Comment: "outcome: "}, nil
 }

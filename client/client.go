@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -88,12 +89,16 @@ func registerToServer(client *client, serverPort int, scanner bufio.Scanner) {
 		input := scanner.Text()
 		client.timestamp += 1
 		//log.Printf("my message: %s", input)
+		var input2 int
+		fmt.Scan(&input2)
 
 		if input == "bid" {
 			serverConnection.Auction(context.Background(), &proto.Bid{
-				Amount:  50,
+				Amount:  int32(input2),
 				Comment: "Succes",
+				Id:      strconv.Itoa(*clientId),
 			})
+			log.Printf("Id: %s", strconv.Itoa(*clientId))
 		}
 
 	}

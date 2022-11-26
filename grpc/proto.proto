@@ -21,6 +21,7 @@ message reply {
 message bid {
     int32 amount = 1;
     string comment = 2;
+    string id = 3;
 }
 
 message result {
