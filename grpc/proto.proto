@@ -16,6 +16,8 @@ message reply {
     string msg = 2;
 }
 
+
+//I bid kunne man sende et client id med, således at serverne holder styr på hvilken af clientsne har the current highest bid.
 message bid {
     int32 amount = 1;
     string comment = 2;
