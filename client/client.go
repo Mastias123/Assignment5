@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -23,7 +22,7 @@ type client struct {
 	serverPort1 int
 	serverPort2 int
 	serverPort3 int
-	amount      int
+	amount      int32
 }
 
 var (
@@ -53,16 +52,16 @@ func main() {
 	}
 
 	// Wait for input in the client terminal
-	scanner := bufio.NewScanner(os.Stdin)
+	//scanner := bufio.NewScanner(os.Stdin)
 
-	go registerToServer(cl, *serverPort1, *scanner)
-	go registerToServer(cl, *serverPort2, *scanner)
-	go registerToServer(cl, *serverPort3, *scanner)
+	go registerToServer(cl, *serverPort1)
+	go registerToServer(cl, *serverPort2)
+	go registerToServer(cl, *serverPort3)
 	for {
 	}
 }
 
-func registerToServer(client *client, serverPort int, scanner bufio.Scanner) {
+func registerToServer(client *client, serverPort int) {
 	//Connect to a server
 	serverConnection, _ := connectToServer(serverPort) // This is grpc logic that connects the client to a server
 
@@ -85,24 +84,28 @@ func registerToServer(client *client, serverPort int, scanner bufio.Scanner) {
 
 	go listenOnServer(serverStream, client)
 
+	scanner := bufio.NewScanner(os.Stdin)
+
 	for scanner.Scan() {
-		input := scanner.Text()
+		var input, _ = strconv.ParseInt(scanner.Text(), 10, 32)
+		var input2 = int32(input)
+		log.Printf("bid: ")
+		//input := scanner.Text()
 		client.timestamp += 1
 		//log.Printf("my message: %s", input)
-		var input2 int
-		fmt.Scan(&input2)
 
-		if input == "bid" {
-			serverConnection.Auction(context.Background(), &proto.Bid{
-				Amount:  int32(input2),
-				Comment: "Succes",
-				Id:      strconv.Itoa(*clientId),
-			})
-			log.Printf("Id: %s", strconv.Itoa(*clientId))
-		}
-
+		//if input == "bid" {
+		serverConnection.Auction(context.Background(), &proto.Bid{
+			Amount:  int32(input2),
+			Comment: "Succes",
+			Id:      strconv.Itoa(*clientId),
+		})
+		log.Printf("Id: %s", strconv.Itoa(*clientId))
 	}
+
 }
+
+//}
 
 // This is grpc logic that connects the client to the server
 func connectToServer(serverPort int) (proto.RegisterClient, error) {
