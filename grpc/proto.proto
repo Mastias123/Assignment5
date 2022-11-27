@@ -17,17 +17,34 @@ message reply {
 }
 
 
-//I bid kunne man sende et client id med, således at serverne holder styr på hvilken af clientsne har the current highest bid.
+
 message bid {
     int32 amount = 1;
-    string comment = 2;
+    int32 clientId = 2;
+	int32 clientPort = 3;
+    int32 myPerseptionOfTheActonsMaxBid = 4;
 }
 
-message result {
+message conformation {
     string comment = 1;
+    int32 maxBid = 2;
 }
+
+message resultRequest {
+    int32 clientId = 1;
+    int32 clientPort = 2;
+}
+
+message Auctionresult {
+    int32 clientId = 1;
+    int32 maxBid = 2;
+}
+
+
+
 
 service register {
     rpc joinServer (request) returns (stream reply) {}
-    rpc auction (bid) returns (result){}
+    rpc placeBid (bid) returns (conformation){}
+    rpc result (resultRequest) returns (Auctionresult) {}
 }

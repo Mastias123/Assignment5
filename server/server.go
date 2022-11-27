@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -15,17 +16,26 @@ import (
 
 type Server struct {
 	proto.UnimplementedRegisterServer
-	id        int32
-	clients   map[int32]proto.RegisterClient
+	id int32
+	//bidders   []Client
 	timestamp int32
 	port      int
 	maxBid    int
+	maxBidId  int
 }
 type Client struct {
 	clientId   int32
 	clientPort int32
 	stream     proto.Register_JoinServerServer
 }
+
+type bidder struct {
+	bidderId   int32
+	highestBid int32
+	bidderPort int32
+}
+
+var bidders []bidder
 
 func main() {
 
@@ -34,20 +44,22 @@ func main() {
 		timestamp: 0,
 		port:      5001,
 		maxBid:    0,
+		maxBidId:  0,
 	}
 	server2 := &Server{
 		id:        2,
 		timestamp: 0,
 		port:      5002,
+		maxBidId:  0,
 	}
 
 	server3 := &Server{
 		id:        3,
 		timestamp: 0,
 		port:      5003,
+		maxBidId:  0,
 	}
 
-	//If you want to run the function as a go routine you have to make sure that this main function does not terminate. This can be done by eather creating a infinite forloop og a wait group
 	go startServer(server1)
 	go startServer(server2)
 	go startServer(server3)
@@ -96,13 +108,54 @@ func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerSer
 	return nil
 }
 
-// Auction(context.Context, *Bid) (*Result, error)
+func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformation, error) {
 
-func (s *Server) Auction(con context.Context, b *proto.Bid) (*proto.Result, error) {
+	if b.MyPerseptionOfTheActonsMaxBid < int32(s.maxBid) {
+
+		return nil, errors.New("you do not know what the current max bid is")
+	}
+
 	log.Printf("Server -%d- resived bid from", s.id)
+	b.Amount = b.Amount + int32(s.maxBid)
 	log.Printf("Amount: %d", b.Amount)
-	log.Printf("Bid succes: %s", b.Comment)
-	s.maxBid += int(b.Amount)
+
+	bidder := bidder{b.ClientId, b.Amount, b.ClientPort}
+
+	if !contains(bidders, bidder.bidderId) {
+		bidders = append(bidders, bidder)
+	}
+	opdateHighestBid(bidders, b.Amount, b.ClientId)
+
+	s.maxBidId = int(b.ClientId)
+	s.maxBid = int(b.Amount)
 	log.Printf("max bid: %d", s.maxBid)
-	return &proto.Result{Comment: "outcome: "}, nil
+	return &proto.Conformation{Comment: "success ", MaxBid: int32(s.maxBid)}, nil
+}
+
+func (s *Server) Result(con context.Context, rr *proto.ResultRequest) (*proto.Auctionresult, error) {
+
+	return &proto.Auctionresult{ClientId: int32(s.maxBidId), MaxBid: int32(s.maxBid)}, nil
+}
+
+//_____________________________________________________________
+//_____________________________________________________________
+//_____________________________________________________________
+
+func contains(b []bidder, bId int32) bool {
+	for _, v := range b {
+		if v.bidderId == bId {
+			return true
+		}
+	}
+	return false
+}
+
+func opdateHighestBid(b []bidder, hBid int32, bId int32) {
+	for _, v := range b {
+		if v.bidderId == bId {
+			if v.highestBid < hBid {
+				v.highestBid = hBid
+			}
+		}
+	}
 }
