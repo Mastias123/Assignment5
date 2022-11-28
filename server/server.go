@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -35,36 +36,38 @@ type bidder struct {
 	bidderPort int32
 }
 
+var sPort = flag.Int("port", 0, "server port number")
 var bidders []bidder
 
 func main() {
+	flag.Parse()
 
 	server1 := &Server{
 		id:        1,
 		timestamp: 0,
-		port:      5001,
+		port:      *sPort,
 		maxBid:    0,
 		maxBidId:  0,
 	}
-	server2 := &Server{
+	/*server2 := &Server{
 		id:        2,
 		timestamp: 0,
 		port:      5002,
 		maxBid:    0,
 		maxBidId:  0,
-	}
+	}*/
 
-	server3 := &Server{
+	/*server3 := &Server{
 		id:        3,
 		timestamp: 0,
 		port:      5003,
 		maxBid:    0,
 		maxBidId:  0,
-	}
+	}*/
 
 	go startServer(server1)
-	go startServer(server2)
-	go startServer(server3)
+	//go startServer(server2)
+	//go startServer(server3)
 
 	for {
 
