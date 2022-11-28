@@ -16,18 +16,20 @@ import (
 
 type client struct {
 	proto.UnimplementedRegisterServer
-	id                            int
-	timestamp                     int32
-	portNumber                    int
-	serverPort1                   int
-	serverPort2                   int
-	serverPort3                   int
-	amount                        int
-	myPerseptionOfTheActonsMaxBid int32
+	id                      int
+	timestamp               int32
+	portNumber              int
+	serverPort1             int
+	serverPort2             int
+	serverPort3             int
+	amount                  int
+	myPerseptionOfTheMaxBid int32
+	hasMaxBidId             int32
 }
 
 var servers []proto.RegisterClient
 var wg sync.WaitGroup
+var wt sync.WaitGroup
 
 var (
 	clientPort        = flag.Int("cPort", 0, "client port number")
@@ -47,13 +49,13 @@ func main() {
 	cl := &client{
 		id: *clientId,
 		//servers:     make(map[int32]proto.RegisterServer),
-		timestamp:                     0,
-		portNumber:                    *clientPort,
-		serverPort1:                   *serverPort1,
-		serverPort2:                   *serverPort2,
-		serverPort3:                   *serverPort3,
-		amount:                        50,
-		myPerseptionOfTheActonsMaxBid: 0,
+		timestamp:               0,
+		portNumber:              *clientPort,
+		serverPort1:             *serverPort1,
+		serverPort2:             *serverPort2,
+		serverPort3:             *serverPort3,
+		amount:                  50,
+		myPerseptionOfTheMaxBid: 0,
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -64,8 +66,8 @@ func main() {
 
 	go listenOnConsole(cl, *scanner)
 
-	for {
-	}
+	wt.Add(1)
+	wt.Wait()
 }
 
 func listenOnConsole(client *client, scanner bufio.Scanner) {
@@ -83,18 +85,18 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 					Amount:                        50,
 					ClientId:                      int32(client.id),
 					ClientPort:                    int32(client.portNumber),
-					MyPerseptionOfTheActonsMaxBid: client.myPerseptionOfTheActonsMaxBid,
+					MyPerseptionOfTheActonsMaxBid: client.myPerseptionOfTheMaxBid,
 				})
 				if err != nil {
 					errorCounter++
 				} else {
 					bidResultCounter++
 					maxBid = int(bidResult.MaxBid)
-					client.myPerseptionOfTheActonsMaxBid = int32(maxBid)
+					client.myPerseptionOfTheMaxBid = int32(maxBid)
 				}
 			}
 			if errorCounter >= bidResultCounter { //Somthing went wrong
-				log.Printf("Bid was NOT! accepted") //ToDo denne fejl håndtere både inconsistens mellem serverne og at men ikke har den rigtige perseption af max bid
+				log.Printf("Bid was NOT! accepted. Please check the result") //ToDo denne fejl håndtere både inconsistens mellem serverne og at men ikke har den rigtige perseption af max bid
 			} else {
 				log.Printf("Succesful bid, max bid is now %d", maxBid) //ToDo evt lav en metode der evt vælger den værdi der forekommer hyppigst
 			}
@@ -105,15 +107,21 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 					ClientId:   int32(*clientId),
 					ClientPort: int32(*clientPort),
 				})
-				if err != nil { //ToDo Is not used yet
-
+				if err != nil { //ToDo Is not used yet, is there to fix compile error
 				}
 
-				if client.myPerseptionOfTheActonsMaxBid < resultStatus.MaxBid { // Gets an answer from all the servers and takes the biggest one.
-					client.myPerseptionOfTheActonsMaxBid = resultStatus.MaxBid
+				if client.myPerseptionOfTheMaxBid < resultStatus.MaxBid { // Gets an answer from all the servers and takes the biggest one.
+					client.myPerseptionOfTheMaxBid = resultStatus.MaxBid
+					client.hasMaxBidId = resultStatus.Id
 				}
 			}
-			log.Printf("Current max Bid: %d", client.myPerseptionOfTheActonsMaxBid)
+			log.Printf("clientId %d clientHasMaxBidId %d", client.id, client.hasMaxBidId)
+			if int32(client.id) == client.hasMaxBidId {
+				log.Printf("You have the current max Bid: %d", client.myPerseptionOfTheMaxBid)
+			} else {
+				log.Printf("Id: %d, has the current max Bid: %d", client.hasMaxBidId, client.myPerseptionOfTheMaxBid)
+			}
+
 		}
 	}
 

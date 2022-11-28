@@ -50,6 +50,7 @@ func main() {
 		id:        2,
 		timestamp: 0,
 		port:      5002,
+		maxBid:    0,
 		maxBidId:  0,
 	}
 
@@ -57,6 +58,7 @@ func main() {
 		id:        3,
 		timestamp: 0,
 		port:      5003,
+		maxBid:    0,
 		maxBidId:  0,
 	}
 
@@ -110,18 +112,18 @@ func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerSer
 
 func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformation, error) {
 
-	if b.MyPerseptionOfTheActonsMaxBid < int32(s.maxBid) {
+	if b.MyPerseptionOfTheActonsMaxBid < int32(s.maxBid) { //If the bidder doesn't know what the current highest bid is
 
 		return nil, errors.New("you do not know what the current max bid is")
 	}
 
-	log.Printf("Server -%d- resived bid from", s.id)
+	log.Printf("Server -%d- resived bid from id %d", s.id, b.ClientId)
 	b.Amount = b.Amount + int32(s.maxBid)
 	log.Printf("Amount: %d", b.Amount)
 
 	bidder := bidder{b.ClientId, b.Amount, b.ClientPort}
 
-	if !contains(bidders, bidder.bidderId) {
+	if !contains(bidders, bidder.bidderId) { //Register the first time a bidder had placed a bid
 		bidders = append(bidders, bidder)
 	}
 	opdateHighestBid(bidders, b.Amount, b.ClientId)
@@ -134,7 +136,7 @@ func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformatio
 
 func (s *Server) Result(con context.Context, rr *proto.ResultRequest) (*proto.Auctionresult, error) {
 
-	return &proto.Auctionresult{ClientId: int32(s.maxBidId), MaxBid: int32(s.maxBid)}, nil
+	return &proto.Auctionresult{Id: int32(s.maxBidId), MaxBid: int32(s.maxBid)}, nil
 }
 
 //_____________________________________________________________
