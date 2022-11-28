@@ -28,6 +28,7 @@ message bid {
 message conformation {
     string comment = 1;
     int32 maxBid = 2;
+    int32 maxBidId = 3;
 }
 
 message resultRequest {

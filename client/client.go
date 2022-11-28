@@ -81,6 +81,7 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 
 		if input == "bid" {
 			for i := 0; i < len(servers); i++ {
+				//front enden skal time out'e serveren
 				bidResult, err := servers[i].PlaceBid(context.Background(), &proto.Bid{
 					Amount:                        50,
 					ClientId:                      int32(client.id),
@@ -93,10 +94,11 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 					bidResultCounter++
 					maxBid = int(bidResult.MaxBid)
 					client.myPerseptionOfTheMaxBid = int32(maxBid)
+					client.hasMaxBidId = bidResult.MaxBidId //Burde rykkes
 				}
 			}
 			if errorCounter >= bidResultCounter { //Somthing went wrong
-				log.Printf("Bid was NOT! accepted. Please check the result") //ToDo denne fejl håndtere både inconsistens mellem serverne og at men ikke har den rigtige perseption af max bid
+				log.Printf("Bid was NOT! accepted. Please check the result") //ToDo denne fejl håndtere både inconsistens mellem serverne og at man ikke har den rigtige perseption af max bid
 			} else {
 				log.Printf("Succesful bid, max bid is now %d", maxBid) //ToDo evt lav en metode der evt vælger den værdi der forekommer hyppigst
 			}
@@ -165,19 +167,3 @@ func connectToServer(serverPort int) (proto.RegisterClient, error) {
 	}
 	return proto.NewRegisterClient(conn), nil
 }
-
-// func listenOnServer(serverStream proto.Register_JoinServerClient, client *client) {
-// 	for {
-// 		resp, err := serverStream.Recv()
-
-// 		if err != nil {
-// 			log.Printf("Error %s", err)
-// 		}
-// 		if resp.Msg == "" {
-// 			log.Printf("%d Connected to Server", resp.Id)
-
-// 		} else {
-// 			log.Printf("Message from %d: %s", resp.Id, resp.Msg)
-// 		}
-// 	}
-// }

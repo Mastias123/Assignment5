@@ -22,6 +22,7 @@ type Server struct {
 	port      int
 	maxBid    int
 	maxBidId  int
+	crash     bool
 }
 type Client struct {
 	clientId   int32
@@ -45,6 +46,7 @@ func main() {
 		port:      5001,
 		maxBid:    0,
 		maxBidId:  0,
+		crash:     false,
 	}
 	server2 := &Server{
 		id:        2,
@@ -52,6 +54,7 @@ func main() {
 		port:      5002,
 		maxBid:    0,
 		maxBidId:  0,
+		crash:     true,
 	}
 
 	server3 := &Server{
@@ -60,6 +63,7 @@ func main() {
 		port:      5003,
 		maxBid:    0,
 		maxBidId:  0,
+		crash:     false,
 	}
 
 	go startServer(server1)
@@ -112,6 +116,10 @@ func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerSer
 
 func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformation, error) {
 
+	if s.crash == true {
+		
+	}
+
 	if b.MyPerseptionOfTheActonsMaxBid < int32(s.maxBid) { //If the bidder doesn't know what the current highest bid is
 
 		return nil, errors.New("you do not know what the current max bid is")
@@ -131,7 +139,7 @@ func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformatio
 	s.maxBidId = int(b.ClientId)
 	s.maxBid = int(b.Amount)
 	log.Printf("max bid: %d", s.maxBid)
-	return &proto.Conformation{Comment: "success ", MaxBid: int32(s.maxBid)}, nil
+	return &proto.Conformation{Comment: "success ", MaxBid: int32(s.maxBid), MaxBidId: int32(s.maxBidId)}, nil
 }
 
 func (s *Server) Result(con context.Context, rr *proto.ResultRequest) (*proto.Auctionresult, error) {
