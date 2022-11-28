@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -14,15 +15,19 @@ import (
 	proto "github.com/Mastias123/Assignment5.git/grpc"
 )
 
+// go run server/server.go -sPort 5001
+// go run server/server.go -sPort 5002
+// go run server/server.go -sPort 5003
+
 type Server struct {
 	proto.UnimplementedRegisterServer
 	id int32
 	//bidders   []Client
-	timestamp int32
-	port      int
-	maxBid    int
-	maxBidId  int
-	crash     bool
+	timestamp   int32
+	port        int
+	maxBid      int
+	maxBidId    int
+	auctionOver bool
 }
 type Client struct {
 	clientId   int32
@@ -36,39 +41,22 @@ type bidder struct {
 	bidderPort int32
 }
 
+var sPort = flag.Int("sPort", 0, "server port number")
 var bidders []bidder
 
 func main() {
+	flag.Parse()
 
 	server1 := &Server{
-		id:        1,
-		timestamp: 0,
-		port:      5001,
-		maxBid:    0,
-		maxBidId:  0,
-		crash:     false,
-	}
-	server2 := &Server{
-		id:        2,
-		timestamp: 0,
-		port:      5002,
-		maxBid:    0,
-		maxBidId:  0,
-		crash:     true,
-	}
-
-	server3 := &Server{
-		id:        3,
-		timestamp: 0,
-		port:      5003,
-		maxBid:    0,
-		maxBidId:  0,
-		crash:     false,
+		id:          1,
+		timestamp:   0,
+		port:        *sPort,
+		maxBid:      0,
+		maxBidId:    0,
+		auctionOver: false,
 	}
 
 	go startServer(server1)
-	go startServer(server2)
-	go startServer(server3)
 
 	for {
 
@@ -116,8 +104,8 @@ func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerSer
 
 func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformation, error) {
 
-	if s.crash == true {
-
+	if s.auctionOver == true {
+		return &proto.Conformation{Comment: "auction is Over ", MaxBid: int32(s.maxBid), MaxBidId: int32(s.maxBidId)}, nil
 	}
 
 	if b.MyPerseptionOfTheActonsMaxBid < int32(s.maxBid) { //If the bidder doesn't know what the current highest bid is
@@ -138,13 +126,20 @@ func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformatio
 
 	s.maxBidId = int(b.ClientId)
 	s.maxBid = int(b.Amount)
+	if s.maxBid == 200 {
+		s.auctionOver = true
+	}
 	log.Printf("max bid: %d", s.maxBid)
-	return &proto.Conformation{Comment: "success ", MaxBid: int32(s.maxBid), MaxBidId: int32(s.maxBidId)}, nil
+	return &proto.Conformation{Comment: "success", MaxBid: int32(s.maxBid), MaxBidId: int32(s.maxBidId)}, nil
 }
 
 func (s *Server) Result(con context.Context, rr *proto.ResultRequest) (*proto.Auctionresult, error) {
 
-	return &proto.Auctionresult{Id: int32(s.maxBidId), MaxBid: int32(s.maxBid)}, nil
+	if s.auctionOver {
+		return &proto.Auctionresult{Id: int32(s.maxBidId), MaxBid: int32(s.maxBid), IsOver: s.auctionOver}, nil
+	}
+
+	return &proto.Auctionresult{Id: int32(s.maxBidId), MaxBid: int32(s.maxBid), IsOver: s.auctionOver}, nil
 }
 
 //_____________________________________________________________

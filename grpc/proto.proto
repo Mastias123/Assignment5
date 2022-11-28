@@ -39,6 +39,7 @@ message resultRequest {
 message Auctionresult {
     int32 Id = 1;
     int32 maxBid = 2;
+    bool isOver = 3;
 }
 
 

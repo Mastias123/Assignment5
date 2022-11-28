@@ -80,9 +80,9 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 			maxBid := 0
 			errorCounter := 0
 			bidResultCounter := 0
+			var msg string
 
 			for i := 0; i < len(servers); i++ {
-				//front enden skal time out'e serveren
 				bidResult, err := servers[i].PlaceBid(context.Background(), &proto.Bid{
 					Amount:                        50,
 					ClientId:                      int32(client.id),
@@ -91,24 +91,28 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 				})
 				if err != nil {
 					errorCounter++
-				} else {
+				} else if bidResult.Comment == "success" {
 					bidResultCounter++
 					maxBid = int(bidResult.MaxBid)
 					client.myPerseptionOfTheMaxBid = int32(maxBid)
-					client.hasMaxBidId = bidResult.MaxBidId //Burde rykkes
+					client.hasMaxBidId = bidResult.MaxBidId
+				} else {
+					msg = bidResult.Comment
 				}
 			}
-			if errorCounter >= bidResultCounter { //Somthing went wrong
+			if msg == "auction is Over" {
+
+				log.Printf("auction is Over")
+
+			} else if errorCounter >= bidResultCounter { //Somthing went wrong
 				log.Printf("Bid was NOT! accepted. Please check the result") //ToDo denne fejl håndtere både inconsistens mellem serverne og at man ikke har den rigtige perseption af max bid
 			} else {
 				log.Printf("Succesful bid, max bid is now %d", maxBid) //ToDo evt lav en metode der evt vælger den værdi der forekommer hyppigst
 			}
 
-			if maxBid == 200 {
-				log.Printf("Auction is over")
-			}
-
 		} else if input == "result" {
+
+			var isOver bool = false
 
 			for i := 0; i < len(servers); i++ {
 				resultStatus, err := servers[i].Result(context.Background(), &proto.ResultRequest{
@@ -117,19 +121,24 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 				})
 
 				if err != nil { //ToDo Is not used yet, is there to fix compile error
-
-				}
-
-				if client.myPerseptionOfTheMaxBid < resultStatus.MaxBid { // Gets an answer from all the servers and takes the biggest one.
+					continue
+				} else if client.myPerseptionOfTheMaxBid < resultStatus.MaxBid { // Gets an answer from all the servers and takes the biggest one.
 					client.myPerseptionOfTheMaxBid = resultStatus.MaxBid
 					client.hasMaxBidId = resultStatus.Id
 				}
+				if resultStatus.IsOver {
+					isOver = true
+				}
 			}
 			//log.Printf("clientId %d clientHasMaxBidId %d", client.id, client.hasMaxBidId)
-			if int32(client.id) == client.hasMaxBidId {
-				log.Printf("You have the current max Bid: %d", client.myPerseptionOfTheMaxBid)
+			if !isOver {
+				if int32(client.id) == client.hasMaxBidId {
+					log.Printf("You have the current max Bid: %d", client.myPerseptionOfTheMaxBid)
+				} else {
+					log.Printf("Id: %d, has the current max Bid: %d", client.hasMaxBidId, client.myPerseptionOfTheMaxBid)
+				}
 			} else {
-				log.Printf("Id: %d, has the current max Bid: %d", client.hasMaxBidId, client.myPerseptionOfTheMaxBid)
+				log.Printf("Auction is over. The winner is id %d, with a bid of %d", client.hasMaxBidId, client.myPerseptionOfTheMaxBid)
 			}
 
 		}
