@@ -117,7 +117,7 @@ func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerSer
 func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformation, error) {
 
 	if s.crash == true {
-		
+
 	}
 
 	if b.MyPerseptionOfTheActonsMaxBid < int32(s.maxBid) { //If the bidder doesn't know what the current highest bid is
