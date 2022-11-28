@@ -14,6 +14,9 @@ import (
 
 	proto "github.com/Mastias123/Assignment5.git/grpc"
 )
+// go run server/server.go -sPort 5001
+// go run server/server.go -sPort 5002
+// go run server/server.go -sPort 5003
 
 type Server struct {
 	proto.UnimplementedRegisterServer
@@ -134,7 +137,7 @@ func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformatio
 	s.maxBidId = int(b.ClientId)
 	s.maxBid = int(b.Amount)
 	log.Printf("max bid: %d", s.maxBid)
-	return &proto.Conformation{Comment: "success ", MaxBid: int32(s.maxBid)}, nil
+	return &proto.Conformation{Comment: "success ", MaxBid: int32(s.maxBid), MaxBidId: int32(s.maxBidId)}, nil
 }
 
 func (s *Server) Result(con context.Context, rr *proto.ResultRequest) (*proto.Auctionresult, error) {

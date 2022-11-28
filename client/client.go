@@ -75,11 +75,12 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 		input := scanner.Text()
 		client.timestamp += 1
 
-		errorCounter := 0
-		bidResultCounter := 0
-		maxBid := 0
-
 		if input == "bid" {
+
+			maxBid := 0
+			errorCounter := 0
+			bidResultCounter := 0
+
 			for i := 0; i < len(servers); i++ {
 				bidResult, err := servers[i].PlaceBid(context.Background(), &proto.Bid{
 					Amount:                        50,
@@ -93,6 +94,7 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 					bidResultCounter++
 					maxBid = int(bidResult.MaxBid)
 					client.myPerseptionOfTheMaxBid = int32(maxBid)
+					client.hasMaxBidId = bidResult.MaxBidId
 				}
 			}
 			if errorCounter >= bidResultCounter { //Somthing went wrong
@@ -102,12 +104,15 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 			}
 
 		} else if input == "result" {
+
 			for i := 0; i < len(servers); i++ {
 				resultStatus, err := servers[i].Result(context.Background(), &proto.ResultRequest{
-					ClientId:   int32(*clientId),
-					ClientPort: int32(*clientPort),
+					ClientId:   int32(client.id),
+					ClientPort: int32(client.portNumber),
 				})
+
 				if err != nil { //ToDo Is not used yet, is there to fix compile error
+
 				}
 
 				if client.myPerseptionOfTheMaxBid < resultStatus.MaxBid { // Gets an answer from all the servers and takes the biggest one.
@@ -115,7 +120,7 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 					client.hasMaxBidId = resultStatus.Id
 				}
 			}
-			log.Printf("clientId %d clientHasMaxBidId %d", client.id, client.hasMaxBidId)
+			//log.Printf("clientId %d clientHasMaxBidId %d", client.id, client.hasMaxBidId)
 			if int32(client.id) == client.hasMaxBidId {
 				log.Printf("You have the current max Bid: %d", client.myPerseptionOfTheMaxBid)
 			} else {
