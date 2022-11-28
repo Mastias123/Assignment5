@@ -103,6 +103,10 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 				log.Printf("Succesful bid, max bid is now %d", maxBid) //ToDo evt lav en metode der evt vælger den værdi der forekommer hyppigst
 			}
 
+			if maxBid == 200 {
+				log.Printf("Auction is over")
+			}
+
 		} else if input == "result" {
 
 			for i := 0; i < len(servers); i++ {
