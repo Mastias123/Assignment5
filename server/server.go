@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 
 	"google.golang.org/grpc"
 
@@ -18,12 +19,11 @@ import (
 // go run server/server.go -sPort 5001
 // go run server/server.go -sPort 5002
 // go run server/server.go -sPort 5003
+var wgMain sync.WaitGroup
 
 type Server struct {
 	proto.UnimplementedRegisterServer
 	id int32
-	//bidders   []Client
-	timestamp   int32
 	port        int
 	maxBid      int
 	maxBidId    int
@@ -49,7 +49,6 @@ func main() {
 
 	server1 := &Server{
 		id:          1,
-		timestamp:   0,
 		port:        *sPort,
 		maxBid:      0,
 		maxBidId:    0,
@@ -58,9 +57,8 @@ func main() {
 
 	go startServer(server1)
 
-	for {
-
-	}
+	wgMain.Add(1)
+	wgMain.Wait()
 
 }
 
@@ -91,7 +89,6 @@ func startServer(server *Server) {
 	scanner.Scan()
 }
 
-// The join server function is named after the grpc function, and when you run the proto command the proto file will create a function signature that has to be implemented
 func (s *Server) JoinServer(rq *proto.Request, rjss proto.Register_JoinServerServer) error {
 	log.Printf("ID %d Connected to server id %d", rq.Id, s.id)
 	var channel = make(chan bool, 1)
@@ -142,9 +139,7 @@ func (s *Server) Result(con context.Context, rr *proto.ResultRequest) (*proto.Au
 	return &proto.Auctionresult{Id: int32(s.maxBidId), MaxBid: int32(s.maxBid), IsOver: s.auctionOver}, nil
 }
 
-//_____________________________________________________________
-//_____________________________________________________________
-//_____________________________________________________________
+
 
 func contains(b []bidder, bId int32) bool {
 	for _, v := range b {

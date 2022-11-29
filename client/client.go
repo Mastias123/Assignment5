@@ -17,7 +17,6 @@ import (
 type client struct {
 	proto.UnimplementedRegisterServer
 	id                      int
-	timestamp               int32
 	portNumber              int
 	serverPort1             int
 	serverPort2             int
@@ -40,16 +39,12 @@ var (
 	serverStream, err proto.RegisterServer
 )
 
-//go run server/server.go
 //go run client/client.go -cPort 8080 -sPort1 5001 -sPort2 5002 -sPort3 5003 -cId 55
 
 func main() {
-	flag.Parse() // Parse the flags to get the port for the client
-
+	flag.Parse()
 	cl := &client{
 		id: *clientId,
-		//servers:     make(map[int32]proto.RegisterServer),
-		timestamp:               0,
 		portNumber:              *clientPort,
 		serverPort1:             *serverPort1,
 		serverPort2:             *serverPort2,
@@ -73,7 +68,6 @@ func main() {
 func listenOnConsole(client *client, scanner bufio.Scanner) {
 	for scanner.Scan() {
 		input := scanner.Text()
-		client.timestamp += 1
 
 		if input == "bid" {
 
@@ -130,7 +124,6 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 					isOver = true
 				}
 			}
-			//log.Printf("clientId %d clientHasMaxBidId %d", client.id, client.hasMaxBidId)
 			if !isOver {
 				if int32(client.id) == client.hasMaxBidId {
 					log.Printf("You have the current max Bid: %d", client.myPerseptionOfTheMaxBid)
@@ -174,7 +167,6 @@ func registerToServer(client *client, serverPort int, scanner bufio.Scanner) {
 
 }
 
-// This is grpc logic that connects the client to the server
 func connectToServer(serverPort int) (proto.RegisterClient, error) {
 	conn, err := grpc.Dial("localhost:"+strconv.Itoa(serverPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
