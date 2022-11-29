@@ -23,7 +23,7 @@ var wgMain sync.WaitGroup
 
 type Server struct {
 	proto.UnimplementedRegisterServer
-	id int32
+	id          int32
 	port        int
 	maxBid      int
 	maxBidId    int
@@ -116,7 +116,7 @@ func (s *Server) PlaceBid(con context.Context, b *proto.Bid) (*proto.Conformatio
 
 	bidder := bidder{b.ClientId, b.Amount, b.ClientPort}
 
-	if !contains(bidders, bidder.bidderId) { //Register the first time a bidder had placed a bid
+	if !contains(bidders, bidder.bidderId) { //Register the first time a bidder has placed a bid
 		bidders = append(bidders, bidder)
 	}
 	opdateHighestBid(bidders, b.Amount, b.ClientId)
@@ -138,8 +138,6 @@ func (s *Server) Result(con context.Context, rr *proto.ResultRequest) (*proto.Au
 
 	return &proto.Auctionresult{Id: int32(s.maxBidId), MaxBid: int32(s.maxBid), IsOver: s.auctionOver}, nil
 }
-
-
 
 func contains(b []bidder, bId int32) bool {
 	for _, v := range b {
