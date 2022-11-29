@@ -1,0 +1,83 @@
+Log for starting three servers and two clients that connects to each other
+
+Server 1 inputs "-sPort 5001":
+Output:
+Started server at port: 5001
+ID 1 Connected to server id 1
+ID 2 Connected to server id 1
+
+Server 2 inputs "-sPort 5002":
+Output:
+Started server at port: 5002
+ID 1 Connected to server id 1
+ID 2 Connected to server id 1
+
+Server 3 inputs "-sPort 5003":
+Output:
+Started server at port: 5003
+ID 1 Connected to server id 1
+ID 2 Connected to server id 1
+
+client 1 inputs "-cPort 8080 -sPort1 5001 -sPort2 5002 -sPort3 5003 -cId 1":
+Output:
+1 Connected to Server
+1 Connected to Server
+1 Connected to Server
+
+client 2 inputs "-cPort 8080 -sPort1 5001 -sPort2 5002 -sPort3 5003 -cId 2"
+Output:
+2 Connected to Server
+2 Connected to Server
+2 Connected to Server
+
+________________________________
+First call to bid from a client
+
+Client 1 inputs "bid":
+Output:
+Succesful bid, max bid is now 50
+
+Servers registers the bid when "bid" is input in the clients: 
+Output:
+Server -1- resived bid from id 1
+Amount: 50
+max bid: 50
+________________________________
+Client 2 tries to bid but needs to check the current highest bid first
+
+Client 2 inputs "bid":
+Output:
+Bid was NOT! accepted. Please check the result
+
+Client 2 inputs "result":
+Output:
+Id: 1, has the current max Bid: 50
+
+Client 2 inputs "bid":
+Output:
+Succesful bid, max bid is now 100
+________________________________
+Server crashes by terminating the server
+
+Terminal for the crashed server will respond:
+Output:
+exit status 0xc000013a
+
+Client tries to bid after a crashed server:
+Output:
+A server has been disconnected
+Succesful bid, max bid is now 150
+________________________________
+The winner of the auction is the first to bid to 200
+
+Client 2 inputs bid when highest bid is 150:
+Output:
+Succesful bid, max bid is now 200
+
+Bids again:
+Output:
+Bid was NOT! accepted. Please check the result
+
+Inputs "result":
+Output:
+Auction is over. The winner is id 2, with a bid of 200

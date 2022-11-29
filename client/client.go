@@ -44,7 +44,7 @@ var (
 func main() {
 	flag.Parse()
 	cl := &client{
-		id: *clientId,
+		id:                      *clientId,
 		portNumber:              *clientPort,
 		serverPort1:             *serverPort1,
 		serverPort2:             *serverPort2,
@@ -85,6 +85,11 @@ func listenOnConsole(client *client, scanner bufio.Scanner) {
 				})
 				if err != nil {
 					errorCounter++
+
+					if err.Error() != "you do not know what the current max bid is" { //if the errormessage is NOT nil & this, then the error must be a disconnected server
+						log.Printf("A server has been disconnected")
+					}
+
 				} else if bidResult.Comment == "success" {
 					bidResultCounter++
 					maxBid = int(bidResult.MaxBid)
